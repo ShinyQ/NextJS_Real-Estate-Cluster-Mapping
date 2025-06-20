@@ -36,6 +36,13 @@ export interface PropertyData {
   cluster: number
 }
 
+const excludedCoordinates = [
+  { latitude: 0.0, longitude: 0.0 },
+  { latitude: 1.0, longitude: 1.0 },
+  { latitude: -6.919440, longitude: 180.0 },
+  { latitude: 20.0, longitude: 28.0 },
+]
+
 // Utility to capitalize each word
 function capitalizeWords(str: string) {
   return str.replace(/\b\w/g, (char) => char.toUpperCase())
@@ -91,7 +98,16 @@ export default function RealEstateMap() {
         return value
       },
       complete: (results: any) => {
-        const data = results.data as PropertyData[]
+        let data = results.data as PropertyData[]
+        // Exclude properties with coordinates in the exclusion list
+        data = data.filter(
+          (p) =>
+            !excludedCoordinates.some(
+              (ex) =>
+                Number(p.latitude).toFixed(6) === ex.latitude.toFixed(6) &&
+                Number(p.longitude).toFixed(6) === ex.longitude.toFixed(6)
+            )
+        )
         setProperties(data)
         setLoading(false)
       },
@@ -150,10 +166,9 @@ export default function RealEstateMap() {
 
   const getClusterColor = (cluster: number) => {
     const colors = {
-      1: "#ef4444", // red
-      2: "#3b82f6", // blue
-      3: "#10b981", // green
-      4: "#f59e0b", // yellow
+      0: "#ef4444", // red
+      1: "#3b82f6", // blue
+      2: "#10b981", // green
     }
     return colors[cluster as keyof typeof colors] || "#6b7280"
   }
@@ -390,7 +405,7 @@ export default function RealEstateMap() {
                 <div className="pt-6 border-t border-gray-200/60">
                   <h4 className="font-medium mb-2 text-blue-900">Legenda Cluster</h4>
                   <div className="space-y-2">
-                    {[1, 2, 3, 4].map((cluster) => (
+                    {[0, 1, 2].map((cluster) => (
                       <div key={cluster} className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full border-2 border-white shadow" style={{ backgroundColor: getClusterColor(cluster) }} />
                         <span className="text-sm text-blue-900">Cluster {cluster}</span>

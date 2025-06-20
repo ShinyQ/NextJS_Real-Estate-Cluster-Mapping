@@ -14,18 +14,15 @@ import {
     PointElement,
     ArcElement,
 } from "chart.js"
-import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
+import ChartDataLabels from "chartjs-plugin-datalabels"
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, ArcElement)
-
-const MapComponent = dynamic(() => import("../components/SimpleMapComponent"), { ssr: false })
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, ArcElement, ChartDataLabels)
 
 const CLUSTER_COLORS: Record<number, string> = {
-    1: "#ef4444",
-    2: "#3b82f6",
-    3: "#10b981",
-    4: "#f59e0b",
+    0: "#ef4444",
+    1: "#3b82f6",
+    2: "#10b981",
 }
 
 export default function ClusterAnalysisPage() {
@@ -54,7 +51,7 @@ export default function ClusterAnalysisPage() {
     }
 
     // Helper: group by cluster
-    const clusters = [1, 2, 3, 4]
+    const clusters = [0, 1, 2]
     const clusterCounts = clusters.map((c) => data.filter((d) => d.cluster === c).length)
 
     // Helper: get numeric array for a field, filter out NaN/empty
@@ -176,9 +173,58 @@ export default function ClusterAnalysisPage() {
         className: "w-full h-[400px] rounded-xl border mb-8",
     }
 
+    // Chart options with datalabels
+    const barDatalabelsOptions = {
+        plugins: {
+            datalabels: {
+                color: '#fff',
+                anchor: 'center' as const,
+                align: 'center' as const,
+                font: { weight: 'bold' as const },
+                formatter: (value: any) => {
+                    if (typeof value === 'number') {
+                        return value % 1 === 0 ? value : value.toFixed(2)
+                    }
+                    return value
+                },
+            },
+        },
+    }
+    const pieDatalabelsOptions = {
+        plugins: {
+            datalabels: {
+                color: '#fff',
+                font: { weight: 'bold' as const },
+                formatter: (value: any, ctx: any) => {
+                    const dataset = ctx.chart.data.datasets[0].data
+                    const total = dataset.reduce((a: number, b: number) => a + b, 0)
+                    const percent = total ? ((value / total) * 100).toFixed(1) : 0
+                    return `${value} (${percent}%)`
+                },
+            },
+        },
+    }
+
+    const priceBarDatalabelsOptions = {
+        plugins: {
+            datalabels: {
+                color: '#fff',
+                anchor: 'center' as const,
+                align: 'center' as const,
+                font: { weight: 'bold' as const },
+                formatter: (value: any) => {
+                    if (typeof value === 'number') {
+                        return (value / 1000).toFixed(2)
+                    }
+                    return value
+                },
+            },
+        },
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 py-10 px-4">
-            <div className="max-w-5xl mx-auto space-y-10">
+            <div className="max-w-7xl mx-auto space-y-10">
                 <button
                     onClick={() => router.back()}
                     className="flex items-center border border-blue-500 text-blue-700 px-4 py-2 rounded-lg mb-6 hover:bg-blue-50 transition"
@@ -186,35 +232,50 @@ export default function ClusterAnalysisPage() {
                     <span className="mr-2">←</span> Kembali
                 </button>
                 <h2 className="text-3xl font-bold text-blue-900 mb-2">Analisis Kluster Properti</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="bg-white rounded-xl shadow p-6">
                         <h3 className="font-semibold mb-4">Distribusi Properti per Cluster</h3>
-                        <Pie data={clusterPie} />
+                        <Pie data={clusterPie} height={300} options={pieDatalabelsOptions} plugins={[ChartDataLabels]} />
                     </div>
                     <div className="bg-white rounded-xl shadow p-6">
                         <h3 className="font-semibold mb-4">Rata-rata Harga per Cluster</h3>
-                        <Bar data={priceBar} />
+                        <Bar data={priceBar} height={300} options={priceBarDatalabelsOptions} plugins={[ChartDataLabels]} />
                     </div>
                     <div className="bg-white rounded-xl shadow p-6">
                         <h3 className="font-semibold mb-4">Rata-rata Luas Tanah per Cluster</h3>
-                        <Bar data={landBar} />
+                        <Bar data={landBar} height={300} options={barDatalabelsOptions} plugins={[ChartDataLabels]} />
                     </div>
                     <div className="bg-white rounded-xl shadow p-6">
                         <h3 className="font-semibold mb-4">Rata-rata Luas Bangunan per Cluster</h3>
-                        <Bar data={buildingBar} />
+                        <Bar data={buildingBar} height={300} options={barDatalabelsOptions} plugins={[ChartDataLabels]} />
                     </div>
                     <div className="bg-white rounded-xl shadow p-6">
                         <h3 className="font-semibold mb-4">Rata-rata Kamar Tidur per Cluster</h3>
-                        <Bar data={bedroomBar} />
+                        <Bar data={bedroomBar} height={300} options={barDatalabelsOptions} plugins={[ChartDataLabels]} />
                     </div>
                     <div className="bg-white rounded-xl shadow p-6">
                         <h3 className="font-semibold mb-4">Rata-rata Kamar Mandi per Cluster</h3>
-                        <Bar data={bathroomBar} />
+                        <Bar data={bathroomBar} height={300} options={barDatalabelsOptions} plugins={[ChartDataLabels]} />
                     </div>
                 </div>
                 <div className="bg-white rounded-xl shadow p-6 mt-8">
                     <h3 className="font-semibold mb-4">Sebaran Harga vs Luas Tanah</h3>
-                    <Scatter data={scatterPriceLand} options={{ scales: { x: { title: { display: true, text: 'Luas Tanah (m²)' } }, y: { title: { display: true, text: 'Harga (IDR)' } } } }} />
+                    <Scatter data={scatterPriceLand} options={{
+                        ...barDatalabelsOptions,
+                        scales: {
+                            x: { title: { display: true, text: 'Luas Tanah (m²)' } },
+                            y: { title: { display: true, text: 'Harga (IDR)' } },
+                        },
+                        plugins: {
+                            ...barDatalabelsOptions.plugins,
+                            datalabels: {
+                                ...barDatalabelsOptions.plugins.datalabels,
+                                align: 'right' as const,
+                                anchor: 'end' as const,
+                                display: false, // Hide by default for scatter, can enable if needed
+                            },
+                        },
+                    }} plugins={[ChartDataLabels]} />
                 </div>
             </div>
         </div>
