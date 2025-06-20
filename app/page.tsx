@@ -345,10 +345,9 @@ export default function RealEstateMap() {
                     </SelectTrigger>
                     <SelectContent className="z-[1100]">
                       <SelectItem value="all">All Clusters</SelectItem>
+                      <SelectItem value="0">Cluster 0</SelectItem>
                       <SelectItem value="1">Cluster 1</SelectItem>
                       <SelectItem value="2">Cluster 2</SelectItem>
-                      <SelectItem value="3">Cluster 3</SelectItem>
-                      <SelectItem value="4">Cluster 4</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
